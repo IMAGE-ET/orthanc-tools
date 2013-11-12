@@ -1,0 +1,30 @@
+# Orthanc
+#
+# VERSION               0.0.1
+
+FROM      ubuntu:12.04
+MAINTAINER Peter Somlo <peter.somlo@gmail.com>
+
+# RUN actually runs a command and commits the result; CMD does not execute anything at build time, but specifies the intended command for the image.
+
+# make sure the package repository is up to date
+RUN echo "deb http://archive.ubuntu.com/ubuntu precise main universe" > /etc/apt/sources.list
+RUN apt-get update
+
+RUN apt-get install -y openssh-server
+RUN apt-get install -y build-essential unzip cmake mercurial uuid-dev libcurl4-openssl-dev liblua5.1-0-dev libgtest-dev libpng-dev libsqlite3-dev libssl-dev zlib1g-dev libdcmtk2-dev libboost-all-dev libwrap0-dev
+RUN wget https://orthanc.googlecode.com/files/Orthanc-0.7.2.tar.gz
+RUN tar -xzvf Orthanc-0.7.2.tar.gz
+RUN mkdir /Orthanc-0.7.2-build
+
+# http://stackoverflow.com/questions/17891981/docker-run-cd-does-not-work-as-expected
+RUN cd /Orthanc-0.7.2-build && cmake "-DDCMTK_LIBRARIES=wrap;oflog" -DALLOW_DOWNLOADS=ON -DUSE_SYSTEM_MONGOOSE=OFF -DUSE_SYSTEM_JSONCPP=OFF -DUSE_SYSTEM_GOOGLE_LOG=OFF -DUSE_GTEST_DEBIAN_SOURCE_PACKAGE=ON /Orthanc-0.7.2
+RUN cd /Orthanc-0.7.2-build && make
+RUN cp /Orthanc-0.7.2/Resources/Configuration.json /Orthanc-0.7.2-build/
+RUN chmod +x /Orthanc-0.7.2-build/Orthanc
+
+ENTRYPOINT ["/Orthanc-0.7.2-build/Orthanc"]
+CMD ["/Orthanc-0.7.2/Resources/Configuration.json"]
+
+EXPOSE 8042
+EXPOSE 4242
